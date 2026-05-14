@@ -24,6 +24,9 @@ import com.maxrave.simpmusic.extension.greyScale
 import com.maxrave.simpmusic.ui.navigation.destination.home.HomeDestination
 import com.maxrave.simpmusic.ui.navigation.destination.library.LibraryDestination
 import com.maxrave.simpmusic.ui.navigation.destination.search.SearchDestination
+// تأكد من استيراد وجهة التحميلات إذا كانت موجودة، لو مش موجودة هنعدلها في الخطوة الجاية
+// import com.maxrave.simpmusic.ui.navigation.destination.library.DownloadDestination 
+
 import com.maxrave.simpmusic.ui.theme.typo
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -38,22 +41,28 @@ fun AppBottomNavigationBar(
     reloadDestinationIfNeeded: (KClass<*>) -> Unit = { _ -> },
 ) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    
+    // أضفنا Downloads هنا في القائمة
     val bottomNavScreens =
         listOf(
             BottomNavScreen.Home,
             BottomNavScreen.Search,
             BottomNavScreen.Library,
+            BottomNavScreen.Downloads, // إضافة الزرار الجديد
         )
+
     var selectedIndex by rememberSaveable {
         mutableIntStateOf(
             when (startDestination) {
-                is HomeDestination -> BottomNavScreen.Home.ordinal
-                is SearchDestination -> BottomNavScreen.Search.ordinal
-                is LibraryDestination -> BottomNavScreen.Library.ordinal
-                else -> BottomNavScreen.Home.ordinal // Default to Home if not recognized
+                is HomeDestination -> 0
+                is SearchDestination -> 1
+                is LibraryDestination -> 2
+                // is DownloadDestination -> 3 
+                else -> 0
             },
         )
     }
+
     Box(
         modifier =
             Modifier
@@ -84,37 +93,24 @@ fun AppBottomNavigationBar(
                     Color.Black
                 },
         ) {
-            bottomNavScreens.forEach { screen ->
+            bottomNavScreens.forEachIndexed { index, screen ->
                 NavigationBarItem(
-                    selected = selectedIndex == screen.ordinal,
+                    selected = selectedIndex == index,
                     onClick = {
-                        if (selectedIndex == screen.ordinal) {
-                            if (currentBackStackEntry?.destination?.hierarchy?.any {
-                                    it.hasRoute(screen.destination::class)
-                                } == true
-                            ) {
-                                reloadDestinationIfNeeded(
-                                    screen.destination::class,
-                                )
-                            } else {
-                                navController.navigate(screen.destination)
+                        selectedIndex = index
+                        navController.navigate(screen.destination) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
                             }
-                        } else {
-                            selectedIndex = screen.ordinal
-                            navController.navigate(screen.destination) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     },
                     label = {
                         Text(
                             stringResource(screen.title),
                             style =
-                                if (selectedIndex == screen.ordinal) {
+                                if (selectedIndex == index) {
                                     typo().bodySmall
                                 } else {
                                     typo().bodySmall.greyScale()
@@ -132,6 +128,7 @@ fun AppBottomNavigationBar(
     }
 }
 
+// نفس التعديل للـ NavigationRail (الوضع الأفقي للموبايل أو التابلت)
 @Composable
 fun AppNavigationRail(
     startDestination: Any = HomeDestination,
@@ -144,14 +141,15 @@ fun AppNavigationRail(
             BottomNavScreen.Home,
             BottomNavScreen.Search,
             BottomNavScreen.Library,
+            BottomNavScreen.Downloads, 
         )
     var selectedIndex by rememberSaveable {
         mutableIntStateOf(
             when (startDestination) {
-                is HomeDestination -> BottomNavScreen.Home.ordinal
-                is SearchDestination -> BottomNavScreen.Search.ordinal
-                is LibraryDestination -> BottomNavScreen.Library.ordinal
-                else -> BottomNavScreen.Home.ordinal // Default to Home if not recognized
+                is HomeDestination -> 0
+                is SearchDestination -> 1
+                is LibraryDestination -> 2
+                else -> 0
             },
         )
     }
@@ -183,7 +181,7 @@ fun AppNavigationRail(
                     Text(
                         stringResource(screen.title),
                         style =
-                            if (selectedIndex == screen.ordinal) {
+                            if (selectedIndex == index) {
                                 typo().bodySmall
                             } else {
                                 typo().bodySmall.greyScale()
@@ -192,26 +190,13 @@ fun AppNavigationRail(
                 },
                 selected = selectedIndex == index,
                 onClick = {
-                    if (selectedIndex == screen.ordinal) {
-                        if (currentBackStackEntry?.destination?.hierarchy?.any {
-                                it.hasRoute(screen.destination::class)
-                            } == true
-                        ) {
-                            reloadDestinationIfNeeded(
-                                screen.destination::class,
-                            )
-                        } else {
-                            navController.navigate(screen.destination)
+                    selectedIndex = index
+                    navController.navigate(screen.destination) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
                         }
-                    } else {
-                        selectedIndex = screen.ordinal
-                        navController.navigate(screen.destination) {
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 },
             )
